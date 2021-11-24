@@ -1,0 +1,214 @@
+#查看ip 
+ip addr
+
+关闭防火墙
+systemctl stop firewalld
+systemctl disable firewalld
+如果VMWARE连接不上网络，那么需要检查VMware NAT Service是否开启
+
+
+redis 部署后，要远程能访问
+1、# bind 127.0.0.1  防止远程连接不上
+2、daemonize  yes  #后台运行
+3、protected-mode no #关闭保护模式
+E:\Tools\ToolsInit\Redis-x64-5.0.10\redis-server.exe E:\Tools\ToolsInit\Redis-x64-5.0.10\redis.windows.conf
+
+
+
+k8s-master	192.168.77.50  
+k8s-node1	192.168.77.51  
+k8s-node2	192.168.77.52  
+
+redis 部署后，要远程能访问
+1、# bind 127.0.0.1  防止远程连接不上
+2、daemonize  yes  #后台运行
+3、protected-mode no #关闭保护模式
+cd  E:\Tools\ToolsInit\Redis-x64-5.0.10
+
+E:\Tools\ToolsInit\Redis-x64-5.0.10\redis-server.exe E:\Tools\ToolsInit\Redis-x64-5.0.10\redis.windows.conf
+
+在某些特殊情况下，需要将某些服务固定在一台宿主机上, k8s可以使用label给node节点打上标签来满足这种需求.
+kubectl label node k8s-node1 aws=kubecloud
+
+kubectl create namespace kubecloud
+#验证 kubectl get namespace 
+
+
+kubectl apply -f kubecloud-deploy.yaml
+#验证 kubectl -n kubecloud   get pods
+-- 查看日志  上面验证后会获取 
+kubectl -n kubecloud logs kubecloud-kjhw8
+#实时日志
+kubectl -n kubecloud logs -f kubecloud-kjhw8
+--显示pod资源信息
+kubectl -n kubecloud describe pod kubecloud-28dq8
+
+#先创建个空的ConfigMap
+touch license.dat
+kubectl create cm license -n kubecloud --from-file=license.dat
+进入容器
+kubectl exec -it kubecloud-69pnj -n kubecloud -- /bin/sh
+
+#查看访问的ip和端口
+kubectl -n kubecloud   get pods -o wide
+输入地址  用户/密码: admin/123456
+
+查看/root/.kube/config文件内容复制到页面首页/AWS KubeCloud/Kubernetes配置的连接信息里面
+
+处理镜像 
+docker pull harbor.awspaas.com/library/aws:6.4.1.0310
+tag为本地仓库标签 
+docker tag aws:6.4.1.0310 actionsoft/aws6410310:v1
+
+docker tag harbor.awspaas.com/library/aws actionsoft/aws6410310:v1
+
+创建nfs 
+https://www.cnblogs.com/wutao666/p/9772229.html
+
+mkdir /nfs 
+chown -R nfsnobody.nfsnobody /nfs
+ls -ld /nfs
+cat>>/etc/exports<<EOF
+#NFS server share directories
+/nfs 192.168.77.50/24(rw,sync)
+EOF
+cat /etc/exports
+查看挂载信息 showmount -e 192.168.77.50
+showmount -e 192.168.77.50 #查询本机nfs共享目录情况
+showmount -a 192.168.77.50 #查询本机共享目录连接情况
+然后给nfs目录授权  chmod -R 777 /nfs
+#遇到问题，Permission denied
+	怎么处理 
+
+配置节点 
+jdbc:mysql://192.168.1.108:3306/aws6?characterEncoding=utf-8
+
+#查看pod信息
+kubectl -n kubecloud   get pods -o wide
+kubectl get deploy -o wide -n kubecloud
+#查询对外暴露端口
+kubectl -n kubecloud   get svc
+#修改deploy.ylm文件后 执行 
+
+#查看标签
+kubectl get node --show-labels
+#删除标签
+kubectl label node k8s-node2 标签名-
+#查询所有configmap
+kubectl get configmap -A
+
+删除现有许可的ConfigMap，命令：kubectl delete cm license -n kubecloud
+用新的许可文件创建ConfigMap，命令：kubectl create cm license -n kubecloud --from-file=license.dat
+使新的许可生效，命令：kubectl rollout restart ds kubecloud -n kubecloud
+
+#强制重启
+kubectl rollout restart deploy kubecloud -n kubecloud
+
+pod状态：STATUS->容器创建中：ContainerCreating|
+
+/opt/bpm/webserver/webapps/portal/checkSys/lib/app
+
+aws kubecloud 后台地址  http://192.168.77.52:8999/   ip:8999端口  admin  123456
+aws 环境
+	前台访问地址：http://192.168.77.50:30798/
+	后台访问地址：http://192.168.77.50:30798/console/
+
+#启动成功后，查看 命名空间为 awspaas-节点名称
+kubectl -n awspaas-awsnode4 get pods -o wide
+kubectl -n awspaas-awsnode4 get svc
+#启动后修改service 暴露端口给外部访问  将 端口部分的Type:ClusterIP改成 Type:NodePort 后用master或者nodeip+暴露的端口就可正常访问
+kubectl  -n awspaas-awsnode4   edit svc awsnode3-svc
+#启动后进入容器 
+kubectl exec -it awsnode4-5895bdfbc5-8l48g  -n awspaas-awsnode4 -- /bin/sh
+
+#查看容器所有日志  -f 查看实时日志 
+kubectl -n awspaas-awsnode4 logs -f awsnode4-5895bdfbc5-8l48g
+#导出日志
+kubectl -n awspaas-awsnode4 logs  awsnode4-5895bdfbc5-8l48g > 202108231025.txt
+
+问题 
+1.文件修改调整的话 怎么做？  升级 app等  nfs 
+2.
+
+获取容器日志：{"kind":"Status","apiVersion":"v1","metadata":{},"status":"Failure","message":
+"container \"awsnode2\" in pod \"awsnode2-5b9847bcc-4znb8\" is waiting to start: ImageInspectError","reason":"BadRequest","code":400}
+
+http://192.168.77.50:30267/console/
+
+systemctl stop docker
+rm -rf /var/lib/docker
+cat /etc/docker/daemon.json
+{
+  "storage-driver": "devicemapper"
+}
+systemctl restart docker
+
+6.4.1.0407
+
+配置节点前要先初始化数据库连接信息
+
+在52机器搭建服务端
+yum install nfs-utils rpcbind -y
+在50机器上搭建客户端 
+echo "mount -t nfs 192.168.77.52:/nfs /data/nfs">>/etc/rc.local
+
+访问AWS PaaS平台
+创建 Ingress
+
+实例的名称就是awspaas- + “k8s的组名”
+
+kubectl -n awspaas-aws777777777777   get pods -o wide
+kubectl -n awspaas-aws777777777777   get pods --show-labels
+
+kubectl exec -it aws777777777777-5859dc558-v7rrc  -n awspaas-aws777777777777 -- /bin/sh
+
+# ingress和service 和平台pod要在一个命名空间
+kubectl apply -f aws777777777777-service.yaml
+kubectl apply -f aws777777777777-ingress.yaml
+
+curl -l http://10.244.2.27:8088/index.jsp
+http://tlang.com/aws/index.jsp
+
+namespace: awspaas-aws777777777777
+
+
+#查看所有命名空间 
+kubectl get ns
+#删除命名空间 
+kubectl delete namespace default --force --grace-period=0
+
+
+#查看命名空间下的service 
+kubectl get svc -n awspaas-aws777777777777
+#删除命名空间下的service 
+kubectl delete svc aws-service -n awspaas-aws777777777777
+
+#查看命名空间下的ingress
+kubectl get ingress -n awspaas-aws777777777777
+#删除命名空间下的service 
+kubectl delete ingress aws-ingress -n awspaas-aws777777777777
+
+
+先配置service 
+kubectl apply -f aws777777777777-nodportservice.yaml
+通过nodepod方式访问
+配置ingress方式代理访问 
+ 安装 nginx-ingress应用（配置为共享本机ip）后，配置ingress ，并再本机配置域名解析到nginx-ingress应用的pod
+安装 nginx-ingress 
+https://blog.csdn.net/xiao44_java/article/details/104778638
+
+修改hosts文件 
+C:\Windows\System32\drivers\etc
+打开cmd
+ipconfig /displaydns
+刷新所有 dns内容
+
+ipconfig /flushdns
+
+
+
+
+
+kubectl -n ingress-nginx   get pods -o wide
+kubectl -n ingress-nginx   get pods --show-labels
+

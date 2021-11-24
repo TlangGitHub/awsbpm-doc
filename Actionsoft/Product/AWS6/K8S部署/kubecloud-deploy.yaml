@@ -1,0 +1,156 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app: kubecloud
+  name: kubecloud
+  namespace: kubecloud
+spec:
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1 #滚动更新策略，配合就绪检测和2个Pod，可无缝提供服务
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: kubecloud
+  template:
+    metadata:
+      labels:
+        app: kubecloud
+    spec:
+      volumes:
+        - name: license
+          configMap:
+            name: license #使用kubecloud许可文件创建config map，命令：kubectl create cm license -n kubecloud --from-file=liecnse.dat
+      hostNetwork: true #必须使用主机网络模式，以保证kubecloud可以获取到宿主机IP
+      dnsPolicy: ClusterFirstWithHostNet #优先使用集群DNS，否则Pod无法访问K8S内的service name（比如redis service）
+      nodeSelector:
+        aws: kubecloud #kubecloud所运行的Node必须含有此标签，否则Pod无法被调度，建议2节点，配合滚动更新策略和就绪检测，可无缝提供服务
+      containers:
+        - args:
+            - '-c'
+            - sh /data/start.sh
+            #- sleep 10000 #获取机器码时，注释掉上一行，启用本行，以保证容器可以被hung住，从而进入容器执行sh licensekey.sh获取机器码
+          command:
+          - /bin/sh
+          volumeMounts:
+          - mountPath: /data/license.dat
+            name: license
+            subPath: license.dat
+          env:
+          - name: REDIS_HOST
+            valueFrom:
+              configMapKeyRef:
+                key: REDIS_HOST
+                name: kubecloud
+          - name: DB_USER
+            valueFrom:
+              configMapKeyRef:
+                key: DB_USER
+                name: kubecloud
+          - name: DB_NAME
+            valueFrom:
+              configMapKeyRef:
+                key: DB_NAME
+                name: kubecloud
+          - name: DB_PWD
+            valueFrom:
+              configMapKeyRef:
+                key: DB_PWD
+                name: kubecloud
+          - name: DB_HOST
+            valueFrom:
+              configMapKeyRef:
+                key: DB_HOST
+                name: kubecloud
+          - name: DB_PORT
+            valueFrom:
+              configMapKeyRef:
+                key: DB_PORT
+                name: kubecloud
+          - name: REDIS_PORT
+            valueFrom:
+              configMapKeyRef:
+                key: REDIS_PORT
+                name: kubecloud
+          - name: REDIS_PWD
+            valueFrom:
+              configMapKeyRef:
+                key: REDIS_PWD
+                name: kubecloud
+          - name: ip.local-parsing
+            valueFrom:
+              configMapKeyRef:
+                key: ip.local-parsing
+                name: kubecloud
+          - name: MOUNTED_PATH
+            valueFrom:
+              configMapKeyRef:
+                key: MOUNTED_PATH
+                name: kubecloud
+          image: 'harbor.awspaas.com/library/kubeprivate:6.4.1' #公网镜像 备份镜像地址harbor.awspaas.com/library/kubeprivate:6.4.1
+          imagePullPolicy: IfNotPresent
+          name: kubecloud
+          ports:
+            - containerPort: 8999
+              protocol: TCP
+          readinessProbe: #就绪检测，配合滚动更新策略和2个Pod，可无缝提供服务
+            httpGet:
+              path: /auth/code
+              port: 8999
+            initialDelaySeconds: 60
+            failureThreshold: 30
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "1"
+            limits:
+              memory: "4Gi"
+              cpu: "2"
+---
+apiVersion: v1
+data:
+  DB_HOST: 192.168.1.139 #数据库host，比如192.168.0.215
+  DB_NAME: kubecloud
+  DB_PORT: '3306' #数据库端口
+  DB_PWD: '123456' #数据库密码
+  DB_USER: root #数据库用户名，比如root
+  MOUNTED_PATH: ./
+  REDIS_HOST: 192.168.1.139 #redis host，比如192.168.0.215或service name
+  REDIS_PORT: '6379' #redis端口
+  REDIS_PWD: '123456' #redis密码，如果无密码，可删除掉此行和上方REDIS_PWD的env
+  ip.local-parsing: "true"
+kind: ConfigMap
+metadata:
+  name: kubecloud
+  namespace: kubecloud
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubecloud
+  namespace: kubecloud
+spec:
+  ports:
+    - port: 8999
+      protocol: TCP
+      targetPort: 8999
+  selector:
+    app: kubecloud
+  type: ClusterIP
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: kubecloud
+  namespace: kubecloud
+spec:
+  rules:
+    - host: tlang.com #根据贵方ingress实际情况填写
+      http:
+        paths:
+          - backend:
+              serviceName: kubecloud
+              servicePort: 8999
+            path: /

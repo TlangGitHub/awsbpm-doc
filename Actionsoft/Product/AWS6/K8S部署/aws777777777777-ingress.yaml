@@ -1,0 +1,20 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/configuration-snippet: >-
+      rewrite ^(/aws)$ $1/ redirect;rewrite ^(/aws/console)$ $1/
+      redirect;
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+  name: aws777777777777-ingress
+  namespace: awspaas-aws777777777777
+spec:
+  rules:
+    - host: tlang.ingress.com
+      http:
+        paths:
+          - backend:
+              serviceName: aws777777777777-service
+              servicePort: 8088
+            path: /aws(/|$)(.*)
+            pathType: ImplementationSpecific

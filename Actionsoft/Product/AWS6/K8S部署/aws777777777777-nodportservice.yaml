@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: aws777777777777-service
+  namespace: awspaas-aws777777777777
+spec:
+  type: NodePort #这里代表是NodePort类型的
+  ports:
+    - port: 8088
+      protocol: TCP
+      targetPort: 8088
+      nodePort: 32000   # 所有的节点都会开放此端口，此端口供外部调用
+  selector:
+    awspaas: awspaas
+  sessionAffinity: None
+status:
+  loadBalancer: {}
